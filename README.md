@@ -1,22 +1,22 @@
 # Azure VM Cost Control Policy
 
-A simple Azure cost-control solution using **Azure Policy + Terraform + GitHub Actions**.
+A custom Azure Policy that helps control Azure compute costs by restricting virtual machines to an approved list of VM SKUs.
 
-## What does it do?
+## Policy Created
 
-The policy prevents users from deploying Azure Virtual Machines with VM SKUs that are not on the organization's approved list.
+* `policies/enforce-vm-sku/policy-definition.json`
+
+  * Denies Azure Virtual Machines using VM SKUs that are not included in the approved `allowedVmSkus` list.
 
 Example:
 
 ```text
-Standard_D2s_v5  → ALLOWED
-Standard_D4s_v5  → ALLOWED
-Other SKU        → DENIED
+Standard_D2s_v5 → ALLOWED
+Standard_D4s_v5 → ALLOWED
+Other SKU       → DENIED
 ```
 
-This helps prevent unnecessary compute costs at deployment time.
-
-## How it works
+## How It Works
 
 ```text
 VM Deployment
@@ -30,74 +30,82 @@ Allowed   Not Allowed
  Allow       DENY
 ```
 
-The policy uses the **Deny** effect because the goal is to prevent unapproved VM deployments rather than identify them after deployment.
+The policy uses the **Deny** effect to prevent unapproved VM deployments at deployment time.
+
+## Policy Parameter
+
+The policy uses `allowedVmSkus` as an **Array parameter**.
+
+The actual approved SKU values are provided when the policy is assigned, allowing the same policy definition to be reused across different scopes.
+
+Example:
+
+```json
+{
+  "allowedVmSkus": {
+    "value": [
+      "Standard_D2s_v5",
+      "Standard_D4s_v5"
+    ]
+  }
+}
+```
+
+## Terraform
+
+Terraform is used to create the custom Azure Policy definition.
+
+The repository intentionally manages the **policy definition only**. Resource groups, policy assignments, and workloads are managed separately based on the target environment.
+
+Run from the repository root:
+
+```bash
+terraform -chdir=terraform init
+terraform -chdir=terraform plan
+terraform -chdir=terraform apply
+```
+
+## GitHub Actions
+
+GitHub Actions validates the Terraform configuration on every push and pull request.
+
+CI performs:
+
+```bash
+terraform -chdir=terraform fmt -check -recursive
+terraform -chdir=terraform init -backend=false
+terraform -chdir=terraform validate
+```
+
+These checks ensure that the Terraform configuration is properly formatted, can be initialized, and passes Terraform validation.
 
 ## Project Structure
 
 ```text
 azure-vm-cost-policy/
-├── policy.json
-├── main.tf
-├── variables.tf
+├── policies/
+│   └── enforce-vm-sku/
+│       └── policy-definition.json
+├── terraform/
+│   └── main.tf
+├── .github/
+│   └── workflows/
+│       └── terraform.yml
 ├── .gitignore
 ├── .terraform.lock.hcl
-├── README.md
-└── .github/
-    └── workflows/
-        └── terraform.yml
+└── README.md
 ```
 
-| File            | Purpose                                    |
-| --------------- | ------------------------------------------ |
-| `policy.json`   | Azure Policy rule                          |
-| `main.tf`       | Terraform policy definition and assignment |
-| `variables.tf`  | Configurable values and approved VM SKUs   |
-| `terraform.yml` | GitHub Actions CI validation               |
+## Design Decision
 
-## Tools
+The policy definition and policy assignment are intentionally separated.
 
-* Azure Policy
-* Terraform
-* GitHub
-* GitHub Actions
-* Visual Studio Code
+The **policy definition** contains the reusable governance rule, while the **policy assignment** determines where the policy is enforced and which VM SKUs are approved for that scope.
 
-## Development Flow
+This allows the same policy to be reused at a management group, subscription, or resource group scope depending on the organization's governance requirements.
 
-```text
-Define Policy
-     ↓
-Write Terraform Configuration
-     ↓
-terraform fmt
-     ↓
-terraform validate
-     ↓
-Git Commit
-     ↓
-GitHub Actions
-     ↓
-Terraform Validation ✓
-```
+## Deployment Status
 
-The policy is assigned to a **dedicated demo resource group** so testing is isolated from other resources.
+The custom policy definition has been successfully deployed to Azure using Terraform and verified through Azure CLI.
 
-## Deployment
-
-With an authenticated Azure subscription:
-
-```bash
-terraform init
-terraform plan
-terraform apply
-```
-
-After deployment, the policy can be tested with an approved and an unapproved VM SKU.
-
-## Current Limitation
-
-This project was developed without an active Azure subscription.
-
-Therefore, the Terraform configuration was validated locally and through GitHub Actions, but the policy was **not deployed to Azure during development**.
-
-The deployment configuration is ready for an authenticated Azure environment.
+The policy is currently **not assigned**, so it does not enforce restrictions on existing Azure resources.
