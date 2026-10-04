@@ -55,9 +55,11 @@ Example:
 
 Terraform is used to create the custom Azure Policy definition.
 
-The repository intentionally manages the **policy definition only**. Resource groups, policy assignments, and workloads are managed separately based on the target environment.
+This repository creates **only the custom Azure Policy definition**.
 
-Run from the repository root:
+Policy assignments and Azure workloads are managed separately based on the target environment.
+
+Run the following commands from the repository root:
 
 ```bash
 terraform -chdir=terraform init
@@ -83,14 +85,14 @@ These checks ensure that the Terraform configuration is properly formatted, can 
 
 ```text
 azure-vm-cost-policy/
+├── .github/
+│   └── workflows/
+│       └── terraform.yml
 ├── policies/
 │   └── enforce-vm-sku/
 │       └── policy-definition.json
 ├── terraform/
 │   └── main.tf
-├── .github/
-│   └── workflows/
-│       └── terraform.yml
 ├── .gitignore
 ├── .terraform.lock.hcl
 └── README.md
@@ -102,7 +104,9 @@ The policy definition and policy assignment are intentionally separated.
 
 The **policy definition** contains the reusable governance rule, while the **policy assignment** determines where the policy is enforced and which VM SKUs are approved for that scope.
 
-This allows the same policy to be reused at a management group, subscription, or resource group scope depending on the organization's governance requirements.
+Keeping these separate allows the same policy definition to be reused at a management group, subscription, or resource group scope depending on the organization's governance requirements.
+
+For example, different subscriptions or environments can use different approved VM SKU lists without creating separate policy definitions.
 
 ## Deployment Status
 
