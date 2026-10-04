@@ -14,7 +14,7 @@ provider "azurerm" {
 }
 
 resource "azurerm_policy_definition" "vm_cost_control" {
-  name         = "vm-cost-control-policy"
+  name         = "vm-cost-control-policy-demo"
   policy_type  = "Custom"
   mode         = "All"
   display_name = "Azure VM Cost Control - Allowed SKUs"
