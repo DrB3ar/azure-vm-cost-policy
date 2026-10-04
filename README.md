@@ -32,6 +32,24 @@ Allowed   Not Allowed
 
 The policy uses the **Deny** effect to prevent unapproved VM deployments at deployment time.
 
+
+## Project Structure
+
+```text
+azure-vm-cost-policy/
+├── .github/
+│   └── workflows/
+│       └── terraform.yml
+├── policies/
+│   └── enforce-vm-sku/
+│       └── policy-definition.json
+├── terraform/
+│   └── main.tf
+├── .gitignore
+├── .terraform.lock.hcl
+└── README.md
+```
+
 ## Policy Parameter
 
 The policy uses `allowedVmSkus` as an **Array parameter**.
@@ -51,6 +69,27 @@ Example:
 }
 ```
 
+
+## Design Decision
+
+The policy definition and policy assignment are intentionally separated.
+
+The **policy definition** contains the reusable governance rule, while the **policy assignment** determines where the policy is enforced and which VM SKUs are approved for that scope.
+
+Keeping these separate allows the same policy definition to be reused at a management group, subscription, or resource group scope depending on the organization's governance requirements.
+
+For example, different subscriptions or environments can use different approved VM SKU lists without creating separate policy definitions.
+
+
+## Azure Login
+
+Before running Terraform, authenticate to Azure using the Azure CLI and verify the active subscription:
+
+```text
+az login
+az account show
+```
+
 ## Terraform
 
 Terraform is used to create the custom Azure Policy definition.
@@ -66,10 +105,19 @@ terraform -chdir=terraform init
 terraform -chdir=terraform plan
 terraform -chdir=terraform apply
 ```
+Alternatively, navigate into the Terraform folder first:
+
+```bash
+cd terraform
+
+terraform init
+terraform plan
+terraform apply
+```
 
 ## GitHub Actions
 
-GitHub Actions validates the Terraform configuration on every push and pull request.
+GitHub Actions validates the Terraform configuration on every push and pull request. Recommended to perform before push.
 
 CI performs:
 
@@ -81,32 +129,7 @@ terraform -chdir=terraform validate
 
 These checks ensure that the Terraform configuration is properly formatted, can be initialized, and passes Terraform validation.
 
-## Project Structure
 
-```text
-azure-vm-cost-policy/
-├── .github/
-│   └── workflows/
-│       └── terraform.yml
-├── policies/
-│   └── enforce-vm-sku/
-│       └── policy-definition.json
-├── terraform/
-│   └── main.tf
-├── .gitignore
-├── .terraform.lock.hcl
-└── README.md
-```
-
-## Design Decision
-
-The policy definition and policy assignment are intentionally separated.
-
-The **policy definition** contains the reusable governance rule, while the **policy assignment** determines where the policy is enforced and which VM SKUs are approved for that scope.
-
-Keeping these separate allows the same policy definition to be reused at a management group, subscription, or resource group scope depending on the organization's governance requirements.
-
-For example, different subscriptions or environments can use different approved VM SKU lists without creating separate policy definitions.
 
 ## Deployment Status
 
