@@ -1,0 +1,39 @@
+# ============================================================
+# Terraform CI Workflow
+# ============================================================
+# This workflow checks our Terraform configuration whenever
+# code is pushed or a pull request is created.
+# ============================================================
+
+name: Terraform CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  terraform:
+    name: Terraform Validation
+    runs-on: ubuntu-latest
+
+    steps:
+
+      # Get the repository code
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Install Terraform
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      # Check Terraform formatting
+      - name: Terraform Format Check
+        run: terraform fmt -check -recursive
+
+      # Initialize Terraform without an Azure backend
+      - name: Terraform Init
+        run: terraform init -backend=false
+
+      # Validate the Terraform configuration
+      - name: Terraform Validate
+        run: terraform validate
